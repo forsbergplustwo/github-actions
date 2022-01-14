@@ -1,0 +1,19 @@
+name: Brakeman
+
+on:
+  workflow_call:
+    secrets:
+      bundle_token:
+        required: true
+
+jobs:
+  rubocop:
+    name: Rubocop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Brakeman
+        uses: reviewdog/action-brakeman@v1
+        with:
+          github_token: ${{ secrets.bundle_token }}
+          reporter: github-pr-review

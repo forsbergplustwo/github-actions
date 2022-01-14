@@ -1,4 +1,4 @@
-name: Reviewdog
+name: Rubocop
 
 on:
   workflow_call:
@@ -20,17 +20,5 @@ jobs:
         uses: reviewdog/action-rubocop@v2
         with:
           rubocop_extensions: rubocop-rails rubocop-performance rubocop-thread_safety
-          github_token: ${{ secrets.bundle_token }}
-          reporter: github-pr-review
-
-  brakeman:
-    name: Brakeman
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Brakeman
-        uses: reviewdog/action-brakeman@v1
-        with:
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
