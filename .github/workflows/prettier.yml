@@ -1,0 +1,23 @@
+name: Prettier
+
+on:
+  workflow_call:
+    secrets:
+      bundle_token:
+        required: true
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prettify code
+        uses: creyD/prettier_action@v4.0
+        with:
+          prettier_options: --list-different --write app/assets/**/*.{js,css,scss}
+          only_changed: true
+          github_token: ${{ secrets.bundle_token }}
