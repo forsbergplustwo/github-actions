@@ -21,3 +21,4 @@ jobs:
           rubocop_extensions: rubocop-rails rubocop-performance rubocop-thread_safety
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
+          use_bundler: true
