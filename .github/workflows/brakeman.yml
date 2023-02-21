@@ -14,6 +14,12 @@ jobs:
       - name: Brakeman permissions
         run: |
           sudo chown -R root:root $GITHUB_WORKSPACE
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
+        with:
+          bundler-cache: true
       - name: Brakeman
         uses: reviewdog/action-brakeman@v2
         with:
