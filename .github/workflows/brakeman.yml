@@ -11,8 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Brakeman permissions
+        run: |
+          sudo chown -R root:root $GITHUB_WORKSPACE
       - name: Brakeman
-        uses: reviewdog/action-brakeman@v1
+        uses: reviewdog/action-brakeman@v2
         with:
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
