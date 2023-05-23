@@ -18,8 +18,9 @@ jobs:
         with:
           bundler-cache: true
       - name: Run Standard
-        uses: kirillplatonov/action-standard@v0.1.1
+        uses: kirillplatonov/action-standard@v0.1.2
         with:
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
-          standard_plugins: standard-rails standard-minitest standard-thread_safety
+          skip_install: true
+          use_bundler: true
