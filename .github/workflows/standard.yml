@@ -23,3 +23,4 @@ jobs:
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
           rubocop_flags: --format progress
+          use_bundler: true
