@@ -22,5 +22,4 @@ jobs:
         with:
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
-          skip_install: true
-          use_bundler: true
+```       standard_plugins: standard-rails standard-minitest standard-thread_safety
