@@ -1,4 +1,4 @@
-name: Standard
+name: StandardRB
 
 on:
   workflow_call:
