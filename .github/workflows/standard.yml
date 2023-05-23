@@ -18,7 +18,7 @@ jobs:
         with:
           bundler-cache: true
       - name: Run StandardRB
-        uses: kirillplatonov/action-standardrb@v0.1.0
+        uses: kirillplatonov/action-standardrb@v0.1.1
         with:
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
