@@ -17,10 +17,8 @@ jobs:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
         with:
           bundler-cache: true
-      - name: Run StandardRB
-        uses: kirillplatonov/action-standardrb@v0.1.2
+      - name: Run Standard
+        uses: kirillplatonov/action-standard@v0.1.0
         with:
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
-          rubocop_flags: --format progress
-          use_bundler: true
