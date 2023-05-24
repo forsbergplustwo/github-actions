@@ -1,4 +1,4 @@
-name: Rubocop
+name: Standard
 
 on:
   workflow_call:
@@ -7,7 +7,7 @@ on:
         required: true
 
 jobs:
-  rubocop:
+  standard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -17,10 +17,10 @@ jobs:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
         with:
           bundler-cache: true
-      - name: Rubocop
-        uses: reviewdog/action-rubocop@v2
+      - name: Run Standard
+        uses: kirillplatonov/action-standard@v1
         with:
-          rubocop_extensions: rubocop-rails rubocop-performance rubocop-thread_safety
           github_token: ${{ secrets.bundle_token }}
           reporter: github-pr-review
+          skip_install: true
           use_bundler: true
