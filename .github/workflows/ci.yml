@@ -8,6 +8,8 @@ on:
         type: string
       use_node:
         type: boolean
+        required: false
+        default: false
     secrets:
       master_key:
         required: true
@@ -37,6 +39,7 @@ jobs:
         options: --entrypoint redis-server
     steps:
       - uses: actions/checkout@v3
+      - run: echo "use_node = ${{ inputs.use_node }}"
       - name: Set up Node
         if: ${{ inputs.use_node }} == 'true'
         uses: actions/setup-node@v3
