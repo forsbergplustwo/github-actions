@@ -6,6 +6,10 @@ on:
       app_name:
         required: true
         type: string
+      use_node:
+        type: boolean
+        required: false
+        default: false
     secrets:
       master_key:
         required: true
@@ -35,6 +39,11 @@ jobs:
         options: --entrypoint redis-server
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Node
+        if: ${{ inputs.use_node == true }}
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.node-version'
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         env:
