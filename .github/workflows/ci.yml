@@ -6,6 +6,8 @@ on:
       app_name:
         required: true
         type: string
+      use_node:
+        type: boolean
     secrets:
       master_key:
         required: true
@@ -36,6 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Node
+        if: ${{ inputs.use_node }} == 'true'
         uses: actions/setup-node@v3
         with:
           node-version-file: '.node-version'
