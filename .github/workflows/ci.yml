@@ -62,6 +62,7 @@ jobs:
           bin/rails db:schema:load
           bin/rails db:migrate
       - name: Run tests
+        timeout-minutes: 15
         env:
           REDIS_URL: redis://localhost:6379/0
           RAILS_MASTER_KEY: ${{ secrets.master_key }}
