@@ -1,0 +1,24 @@
+name: ERB Lint
+
+on:
+  workflow_call:
+    secrets:
+      bundle_token:
+        required: true
+
+jobs:
+  erb-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
+        with:
+          bundler-cache: true
+      - name: erb-lint
+        uses: reviewdog/action-erblint@v1
+        with:
+          github_token: ${{ secrets.bundle_token }}
+          reporter: github-pr-review
