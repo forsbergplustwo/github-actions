@@ -38,7 +38,7 @@ jobs:
         ports: ['6379:6379']
         options: --entrypoint redis-server
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Node
         if: ${{ inputs.use_node == true }}
         uses: actions/setup-node@v3

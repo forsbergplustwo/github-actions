@@ -1,0 +1,37 @@
+name: Deploy app
+
+on:
+  workflow_call:
+    secrets:
+      bundle_token:
+        required: true
+      shopify_cli_token:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
+        with:
+          bundler-cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'yarn'
+
+      - name: Install npm dependencies
+        run: yarn install
+
+      - name: Deploy
+        env:
+          SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.shopify_cli_token }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+        run: yarn deploy -f --source-control-url "$COMMIT_URL"

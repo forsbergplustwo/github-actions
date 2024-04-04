@@ -5,13 +5,14 @@ This repo contains our re-usable Github Actions, used by our AppKit powered apps
 ## Setup Action Secrets (required):
 - BUNDLE_TOKEN - Github's Personal access token (info on how to create it below)
 - MASTER_KEY - Rails credentials key from 1Password
+- SHOPIFY_CLI_PARTNERS_TOKEN - https://shopify.dev/docs/apps/tools/cli/ci-cd#generate-a-cli-authentication-token-in-the-partner-dashboard
 
 Add these to the repos secrets action settings. Example: https://github.com/forsbergplustwo/app_kit/settings/secrets/actions
 
 #### To create a Personal access token:
 1. Go to https://github.com/settings/tokens
 1. Create new token with "repo" scope
-1. Choose "No expiration" or set it to a high value (eg year) in repo settings: 
+1. Choose "No expiration" or set it to a high value (eg year) in repo settings:
 
 
 ## Manual setup (non AppKit powered repo)
