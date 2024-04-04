@@ -34,4 +34,4 @@ jobs:
         env:
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.shopify_cli_token }}
           COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
-        run: yarn deploy -f --source-control-url "$COMMIT_URL"
+        run: yarn deploy -c production -f --source-control-url "$COMMIT_URL"
