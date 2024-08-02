@@ -61,6 +61,9 @@ jobs:
           bin/rails db:create
           bin/rails db:schema:load
           bin/rails db:migrate
+      - name: Install dependencies
+        if: ${{ inputs.use_node == true }}
+        run: yarn install
       - name: Precompile assets
         env:
           RAILS_ENV: test
