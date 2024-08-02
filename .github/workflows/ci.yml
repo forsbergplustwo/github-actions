@@ -61,6 +61,11 @@ jobs:
           bin/rails db:create
           bin/rails db:schema:load
           bin/rails db:migrate
+      - name: Precompile assets
+        env:
+          RAILS_ENV: test
+          RAILS_MASTER_KEY: ${{ secrets.master_key }}
+        run: bin/rails assets:precompile
       - name: Run tests
         timeout-minutes: 15
         env:
