@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:13
+        image: postgres:13-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_DB: ${{ inputs.app_name }}_test
@@ -34,18 +34,22 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis
+        image: redis:alpine
         ports: ['6379:6379']
         options: --entrypoint redis-server
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libvips
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvips
       - name: Set up Node
         if: ${{ inputs.use_node == true }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version-file: '.node-version'
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         env:
@@ -55,6 +59,13 @@ jobs:
       - name: Copy .env sample
         run: |
           cp .env.example .env
+      - name: Cache bootsnap
+        uses: actions/cache@v4
+        with:
+          path: tmp/cache
+          key: ${{ runner.os }}-bootsnap-${{ hashFiles('Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bootsnap-
       - name: Setup test database
         env:
           RAILS_ENV: test
@@ -63,9 +74,19 @@ jobs:
           bin/rails db:create
           bin/rails db:schema:load
           bin/rails db:migrate
+      - name: Cache node_modules
+        if: ${{ inputs.use_node == true }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('.node-version') }}
+          restore-keys: |
+            ${{ runner.os }}-modules-
       - name: Install dependencies
         if: ${{ inputs.use_node == true }}
-        run: yarn install
+        run: yarn install --frozen-lockfile --prefer-offline --no-progress
       - name: Precompile assets
         env:
           RAILS_ENV: test
