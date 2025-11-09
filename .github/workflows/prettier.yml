@@ -1,13 +1,19 @@
-name: Prettier - with autofix.ci
+name: Prettier
+
 on:
-  pull_request:
-  push:
-permissions: {}
+  workflow_call:
+    secrets:
+      bundle_token:
+        required: true
+
 jobs:
   prettier:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
       - uses: actions/setup-node@v4
       - name: Build Prettier patterns
         id: patterns
