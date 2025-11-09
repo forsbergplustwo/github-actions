@@ -13,9 +13,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+
+      # Build patterns only for directories that actually exist
+      - name: Build Prettier patterns
+        id: patterns
+        shell: bash
+        run: |
+          PATTERNS=()
+          if [ -d app/assets ]; then
+            PATTERNS+=('app/assets/**/*.{js,css,scss}')
+          fi
+          if [ -d app/javascript ]; then
+            PATTERNS+=('app/javascript/**/*.{js,css,scss}')
+          fi
+          # Join patterns with space and export to env
+          if [ ${#PATTERNS[@]} -eq 0 ]; then
+            echo "RUN_PRETTIER=false" >> "$GITHUB_ENV"
+          else
+            printf "PATTERNS=%s\n" "${PATTERNS[*]}" >> "$GITHUB_ENV"
+            echo "RUN_PRETTIER=true" >> "$GITHUB_ENV"
+          fi
+
       - name: Prettify code
+        if: env.RUN_PRETTIER == 'true'
         uses: creyD/prettier_action@v4.3
         with:
-          prettier_options: --list-different --write app/assets/**/*.{js,css,scss}
+          # --ignore-unknown prevents failures on non-prettier file types;
+          # patterns are only included for dirs that exist.
+          prettier_options: --list-different --write --ignore-unknown ${{ env.PATTERNS }}
           only_changed: true
           github_token: ${{ secrets.bundle_token }}
