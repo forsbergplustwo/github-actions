@@ -14,9 +14,23 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-      - name: Yarn install
-        run: yarn install
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('.node-version') }}
+          restore-keys: |
+            ${{ runner.os }}-modules-
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --prefer-offline --no-progress
       - name: Prettify code
         uses: creyD/prettier_action@v4.3
         with:
