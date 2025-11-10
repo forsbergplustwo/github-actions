@@ -5,37 +5,32 @@ on:
     secrets:
       bundle_token:
         required: true
+
 jobs:
   prettier:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           ref: ${{ github.head_ref }}
       - uses: actions/setup-node@v4
-      - name: Build Prettier patterns
-        id: patterns
-        shell: bash
-        run: |
-          PATTERNS=()
-          if [ -d app/assets ]; then
-            PATTERNS+=('app/assets/**/*.{js,css,scss,erb,html}')
-          fi
-          if [ -d app/javascript ]; then
-            PATTERNS+=('app/javascript/**/*.{js,css,scss,erb,html}')
-          fi
-          if [ ${#PATTERNS[@]} -eq 0 ]; then
-            echo "No matching directories found. Skipping Prettier."
-            echo "RUN_PRETTIER=false" >> "$GITHUB_ENV"
-          else
-            echo "RUN_PRETTIER=true" >> "$GITHUB_ENV"
-            printf "PATTERNS=%s\n" "${PATTERNS[*]}" >> "$GITHUB_ENV"
-          fi
-      - name: Prettify code
-        if: env.RUN_PRETTIER == 'true'
+      - name: Get changed files
+        id: changed
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            app/assets/**/*.{js,css,scss}
+            app/javascript/**/*.{js,css,scss}
+      - name: Run Prettier
+        if: steps.changed.outputs.any_changed == 'true'
         run: |
           yarn
-          yarn prettier --list-different --write --ignore-unknown ${{ env.PATTERNS }}
+          yarn prettier --write --ignore-unknown ${{ steps.changed.outputs.all_changed_files }}
+
+      # Commit any formatting changes automatically
       - uses: autofix-ci/action@v1
+        if: steps.changed.outputs.any_changed == 'true'
         with:
           commit-message: "Apply Prettier format"
