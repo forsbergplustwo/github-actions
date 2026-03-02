@@ -35,27 +35,22 @@ jobs:
           --health-retries 5
       redis:
         image: redis:alpine
-        ports: ['6379:6379']
+        ports: ["6379:6379"]
         options: --entrypoint redis-server
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - name: Set up mise
+        uses: jdx/mise-action@v2
+      - name: Install runtimes
+        run: mise install
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvips
-      - name: Set up Node
-        if: ${{ inputs.use_node == true }}
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Install Ruby dependencies
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
-        with:
-          bundler-cache: true
+        run: bundle install --jobs 4 --retry 3
       - name: Copy .env sample
         run: |
           cp .env.example .env
@@ -74,19 +69,21 @@ jobs:
           bin/rails db:create
           bin/rails db:schema:load
           bin/rails db:migrate
-      - name: Cache node_modules
+      - name: Cache pnpm store
         if: ${{ inputs.use_node == true }}
         uses: actions/cache@v4
         with:
           path: |
-            node_modules
-            **/node_modules
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('.node-version') }}
+            ~/.pnpm-store
+            ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-modules-
+            ${{ runner.os }}-pnpm-
       - name: Install dependencies
         if: ${{ inputs.use_node == true }}
-        run: yarn install --frozen-lockfile --prefer-offline --no-progress
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
       - name: Precompile assets
         env:
           RAILS_ENV: test

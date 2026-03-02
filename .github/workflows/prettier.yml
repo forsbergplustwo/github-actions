@@ -14,27 +14,27 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-      - name: Cache node_modules
+      - name: Set up mise
+        uses: jdx/mise-action@v2
+      - name: Install runtimes
+        run: mise install
+      - name: Cache pnpm store
         uses: actions/cache@v4
         with:
           path: |
-            node_modules
-            **/node_modules
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('.node-version') }}
+            ~/.pnpm-store
+            ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-modules-
+            ${{ runner.os }}-pnpm-
       - name: Install dependencies
-        run: yarn install --frozen-lockfile --prefer-offline --no-progress
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
       - name: Prettify code
         uses: creyD/prettier_action@v4.3
         with:
           prettier_options: --list-different --write --ignore-unknown "app/**/*.{js,css,scss}"
-          prettier_plugins: '@prettier/plugin-ruby @4az/prettier-plugin-html-erb prettier-plugin-tailwindcss'
+          prettier_plugins: "@prettier/plugin-ruby @4az/prettier-plugin-html-erb prettier-plugin-tailwindcss"
           only_changed: true
           github_token: ${{ secrets.bundle_token }}
