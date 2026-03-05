@@ -9,32 +9,16 @@ on:
 jobs:
   prettier:
     runs-on: ubuntu-latest
+    env:
+      MISE_EXPERIMENTAL: true
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
       - name: Set up mise
-        uses: jdx/mise-action@v2
-      - name: Install runtimes
-        run: mise install
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            ~/.local/share/pnpm/store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - name: Install dependencies
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-      - name: Prettify code
-        uses: creyD/prettier_action@v4.3
-        with:
-          prettier_options: --list-different --write --ignore-unknown "app/**/*.{js,css,scss}"
-          prettier_plugins: "@prettier/plugin-ruby @4az/prettier-plugin-html-erb prettier-plugin-tailwindcss"
-          only_changed: true
-          github_token: ${{ secrets.bundle_token }}
+        uses: jdx/mise-action@v3
+      - name: Run formatter task
+        env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
+        run: mise run format:write

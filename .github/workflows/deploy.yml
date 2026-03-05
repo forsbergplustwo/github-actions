@@ -12,25 +12,20 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    env:
+      MISE_EXPERIMENTAL: true
     steps:
       - uses: actions/checkout@v4
       - name: Set up mise
-        uses: jdx/mise-action@v2
-      - name: Install runtimes
-        run: mise install
-
-      - name: Install Ruby dependencies
+        uses: jdx/mise-action@v3
+      - name: Setup project
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
-        run: bundle install --jobs 4 --retry 3
-
-      - name: Install npm dependencies
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
+        run: mise run setup
 
       - name: Deploy
         env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.shopify_cli_token }}
           COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
-        run: pnpm deploy -c production -f --source-control-url "$COMMIT_URL"
+        run: mise run deploy
