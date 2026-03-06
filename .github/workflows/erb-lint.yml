@@ -9,19 +9,13 @@ on:
 jobs:
   erb-lint:
     runs-on: ubuntu-latest
+    env:
+      MISE_EXPERIMENTAL: true
     steps:
       - uses: actions/checkout@v4
       - name: Set up mise
-        uses: jdx/mise-action@v2
-      - name: Install runtimes
-        run: mise install
-      - name: Install Ruby dependencies
+        uses: jdx/mise-action@v3
+      - name: Run ERB lint task
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
-        run: bundle install --jobs 4 --retry 3
-      - name: erb-lint
-        uses: tk0miya/action-erblint@v1
-        with:
-          github_token: ${{ secrets.bundle_token }}
-          reporter: github-pr-review
-          use_bundler: true
+        run: mise run lint:erb

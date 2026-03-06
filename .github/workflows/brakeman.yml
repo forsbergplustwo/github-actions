@@ -9,18 +9,13 @@ on:
 jobs:
   brakeman:
     runs-on: ubuntu-latest
+    env:
+      MISE_EXPERIMENTAL: true
     steps:
       - uses: actions/checkout@v4
       - name: Set up mise
-        uses: jdx/mise-action@v2
-      - name: Install runtimes
-        run: mise install
-      - name: Install Ruby dependencies
+        uses: jdx/mise-action@v3
+      - name: Run security task
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
-        run: bundle install --jobs 4 --retry 3
-      - name: Brakeman
-        uses: reviewdog/action-brakeman@v2
-        with:
-          github_token: ${{ secrets.bundle_token }}
-          reporter: github-pr-review
+        run: mise run security

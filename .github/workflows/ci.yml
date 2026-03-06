@@ -19,6 +19,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      MISE_EXPERIMENTAL: true
     services:
       postgres:
         image: postgres:13-alpine
@@ -42,61 +44,15 @@ jobs:
         with:
           fetch-depth: 1
       - name: Set up mise
-        uses: jdx/mise-action@v2
-      - name: Install runtimes
-        run: mise install
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvips
-      - name: Install Ruby dependencies
-        env:
-          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
-        run: bundle install --jobs 4 --retry 3
-      - name: Copy .env sample
-        run: |
-          cp .env.example .env
-      - name: Cache bootsnap
-        uses: actions/cache@v4
-        with:
-          path: tmp/cache
-          key: ${{ runner.os }}-bootsnap-${{ hashFiles('Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bootsnap-
-      - name: Setup test database
-        env:
-          RAILS_ENV: test
-          RAILS_MASTER_KEY: ${{ secrets.master_key }}
-        run: |
-          bin/rails db:create
-          bin/rails db:schema:load
-          bin/rails db:migrate
-      - name: Cache pnpm store
-        if: ${{ inputs.use_node == true }}
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            ~/.local/share/pnpm/store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - name: Install dependencies
-        if: ${{ inputs.use_node == true }}
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-      - name: Precompile assets
-        env:
-          RAILS_ENV: test
-          RAILS_MASTER_KEY: ${{ secrets.master_key }}
-        run: bin/rails assets:precompile
-      - name: Run tests
+        uses: jdx/mise-action@v3
+      - name: Run CI task
         timeout-minutes: 15
         env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
           NODE_OPTIONS: --openssl-legacy-provider
           REDIS_URL: redis://localhost:6379/0
           RAILS_MASTER_KEY: ${{ secrets.master_key }}
-        run: |
-          bin/rails test:all
+        run: mise run ci
       - name: Upload artifacts
         if: failure()
         uses: actions/upload-artifact@v4
