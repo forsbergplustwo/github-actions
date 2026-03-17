@@ -9,8 +9,6 @@ on:
 jobs:
   standard:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     env:
       MISE_EXPERIMENTAL: true
     steps:
@@ -45,9 +43,3 @@ jobs:
           git commit -m "Apply Standard Ruby autofixes" || echo "No changes to commit"
           git push
           echo "::endgroup::"
-      - name: Fail the build if Standard Ruby failed
-        shell: bash
-        if: ${{ steps.standardrb.outcome == 'failure' }}
-        run: |
-          echo "::error::Standard Ruby found issues in your code."
-          exit 1

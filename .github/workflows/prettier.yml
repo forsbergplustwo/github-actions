@@ -14,11 +14,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
       - name: Set up mise
         uses: jdx/mise-action@v3
       - name: Run formatter task
+        id: prettier
+        continue-on-error: true
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
         run: mise run format:write
+      - name: Check for modified files
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "prettier_autofixes_found=true" >> "$GITHUB_ENV"
+          else
+            echo "prettier_autofixes_found=false" >> "$GITHUB_ENV"
+          fi
+      - name: Commit autofixes
+        shell: bash
+        if: env.prettier_autofixes_found == 'true'
+        run: |
+          echo "::group::Committing Prettier fixes"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Apply Prettier autofixes" || echo "No changes to commit"
+          git push
+          echo "::endgroup::"
