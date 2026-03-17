@@ -51,6 +51,7 @@ jobs:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
           NODE_OPTIONS: --openssl-legacy-provider
           REDIS_URL: redis://localhost:6379/0
+          RAILS_ENV: test
           RAILS_MASTER_KEY: ${{ secrets.master_key }}
         run: mise run ci
       - name: Upload artifacts
