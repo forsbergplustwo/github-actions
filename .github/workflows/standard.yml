@@ -9,13 +9,45 @@ on:
 jobs:
   standard:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       MISE_EXPERIMENTAL: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
       - name: Set up mise
         uses: jdx/mise-action@v3
       - name: Run Ruby lint task
+        id: standardrb
+        continue-on-error: true
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
         run: mise run lint:ruby
+      - name: Check for modified files
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "standardrb_autofixes_found=true" >> "$GITHUB_ENV"
+          else
+            echo "standardrb_autofixes_found=false" >> "$GITHUB_ENV"
+          fi
+      - name: Commit autofixes
+        shell: bash
+        if: env.standardrb_autofixes_found == 'true'
+        run: |
+          echo "::group::Committing Standard fixes"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Apply Standard Ruby autofixes" || echo "No changes to commit"
+          git push
+          echo "::endgroup::"
+      - name: Fail the build if Standard Ruby failed
+        shell: bash
+        if: ${{ steps.standardrb.outcome == 'failure' }}
+        run: |
+          echo "::error::Standard Ruby found issues in your code."
+          exit 1
