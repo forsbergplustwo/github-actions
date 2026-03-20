@@ -23,4 +23,4 @@ jobs:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.shopify_cli_token }}
           COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
-        run: mise run deploy
+        run: mise run shopify:deploy

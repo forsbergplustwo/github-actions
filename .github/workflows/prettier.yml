@@ -23,7 +23,7 @@ jobs:
         continue-on-error: true
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
-        run: mise run format:write
+        run: mise run lint:js
       - name: Check for modified files
         shell: bash
         run: |
