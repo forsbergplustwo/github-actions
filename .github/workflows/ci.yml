@@ -48,11 +48,11 @@ jobs:
         ports: ["6379:6379"]
         options: --entrypoint redis-server
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
       - name: Set up mise
-        uses: jdx/mise-action@v3
+        uses: jdx/mise-action@v5
       - name: Run CI task
         timeout-minutes: 15
         env:
@@ -66,7 +66,7 @@ jobs:
         run: mise run ci
       - name: Upload artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: screenshots
           path: /home/runner/work/${{ inputs.app_name }}/${{ inputs.app_name }}/tmp/screenshots/
