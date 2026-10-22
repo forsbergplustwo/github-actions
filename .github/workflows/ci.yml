@@ -16,9 +16,17 @@ on:
       bundle_token:
         required: true
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       MISE_EXPERIMENTAL: true
     services:
@@ -50,6 +58,8 @@ jobs:
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
           NODE_OPTIONS: --openssl-legacy-provider
+          NODE_NO_WARNINGS: 1
+          RUBYOPT: -W:no-deprecated
           REDIS_URL: redis://localhost:6379/0
           RAILS_ENV: test
           RAILS_MASTER_KEY: ${{ secrets.master_key }}
