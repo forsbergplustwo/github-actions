@@ -18,6 +18,9 @@ jobs:
           fetch-depth: 0
       - name: Set up mise
         uses: jdx/mise-action@v5
+        with:
+          cache: true
+          cache_key: mise-v0-{{platform}}-{{file_hash}}-${{ hashFiles('**/Gemfile.lock', '**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml', '**/mise.lock') }}
       - name: Run formatter task
         id: prettier
         continue-on-error: true
