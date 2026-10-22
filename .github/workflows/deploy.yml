@@ -15,9 +15,9 @@ jobs:
     env:
       MISE_EXPERIMENTAL: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up mise
-        uses: jdx/mise-action@v3
+        uses: jdx/mise-action@v5
       - name: Run mise task deploy:shopify
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
