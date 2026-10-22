@@ -20,7 +20,6 @@ jobs:
         uses: jdx/mise-action@v5
         with:
           cache: true
-          cache_key: mise-v0-{{platform}}-{{file_hash}}-${{ hashFiles('**/Gemfile.lock', '**/package-lock.json', '**/yarn.lock', '**/pnpm-lock.yaml', '**/mise.lock') }}
       - name: Run Ruby lint task
         id: standardrb
         continue-on-error: true
