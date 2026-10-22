@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@v7
       - name: Set up mise
         uses: jdx/mise-action@v5
+        with:
+          cache: true
       - name: Run mise task deploy:shopify
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}

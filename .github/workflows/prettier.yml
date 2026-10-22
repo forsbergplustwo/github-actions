@@ -18,6 +18,8 @@ jobs:
           fetch-depth: 0
       - name: Set up mise
         uses: jdx/mise-action@v5
+        with:
+          cache: true
       - name: Run formatter task
         id: prettier
         continue-on-error: true

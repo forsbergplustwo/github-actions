@@ -53,12 +53,27 @@ jobs:
           fetch-depth: 1
       - name: Set up mise
         uses: jdx/mise-action@v5
+        with:
+          cache: true
+      - name: Cache Ruby gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: bundle-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock', '**/.tool-versions', '**/mise.toml') }}
+          restore-keys: bundle-${{ runner.os }}-
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
       - name: Run CI task
         timeout-minutes: 15
         env:
           BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
           NODE_OPTIONS: --openssl-legacy-provider
           NODE_NO_WARNINGS: 1
+          BUNDLE_PATH: ${{ github.workspace }}/vendor/bundle
           RUBYOPT: -W:no-deprecated
           REDIS_URL: redis://localhost:6379/0
           RAILS_ENV: test

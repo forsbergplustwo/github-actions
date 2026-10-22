@@ -18,6 +18,8 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
       - name: Set up mise
         uses: jdx/mise-action@v5
+        with:
+          cache: true
       - name: Run Ruby lint task
         id: standardrb
         continue-on-error: true
