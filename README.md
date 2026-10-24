@@ -157,7 +157,7 @@ on: [push]
 
 jobs:
   build:
-    uses: forsbergplustwo/github-actions/.github/workflows/ci.yml@main
+    uses: forsbergplustwo/github-actions/.github/workflows/ci.yml@<full-commit-sha>
     with:
       app_name: ddp
     secrets:
@@ -177,7 +177,9 @@ on:
 
 jobs:
   prettier:
-    uses: forsbergplustwo/github-actions/.github/workflows/prettier.yml@main
+    permissions:
+      contents: write
+    uses: forsbergplustwo/github-actions/.github/workflows/prettier.yml@<full-commit-sha>
     secrets:
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
 ```
@@ -191,14 +193,35 @@ on: [pull_request]
 
 jobs:
   standard:
-    uses: forsbergplustwo/github-actions/.github/workflows/standard.yml@main
+    permissions:
+      contents: write
+    uses: forsbergplustwo/github-actions/.github/workflows/standard.yml@<full-commit-sha>
     secrets:
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
 
   brakeman:
-    uses: forsbergplustwo/github-actions/.github/workflows/brakeman.yml@main
+    uses: forsbergplustwo/github-actions/.github/workflows/brakeman.yml@<full-commit-sha>
     secrets:
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
 ```
 
 All reusable workflows above call `mise run <task>` in your repository. Ensure your `mise.toml` implements the required task contract.
+
+## Pin reusable workflows to a commit SHA
+
+Call these workflows at a full-length commit SHA, not `@main`. Branch names and tags can be moved to different code.
+
+Find SHAs on the [commits page](https://github.com/forsbergplustwo/github-actions/commits/main):
+
+```yaml
+jobs:
+  build:
+    uses: forsbergplustwo/github-actions/.github/workflows/ci.yml@<full-commit-sha>
+    with:
+      app_name: ddp
+    secrets:
+      master_key: ${{ secrets.MASTER_KEY }}
+      bundle_token: ${{ secrets.BUNDLE_TOKEN }}
+```
+
+Do not enable `pull_request_target` on caller workflows. These reusable workflows check out and run repository code with `bundle_token` / `master_key` / `shopify_cli_token`, and they refuse `pull_request_target` callers.
