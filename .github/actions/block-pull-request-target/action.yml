@@ -1,0 +1,12 @@
+name: Block pull_request_target
+description: Fail when a reusable workflow is invoked from pull_request_target, which would run repository code with secrets.
+
+runs:
+  using: composite
+  steps:
+    - name: Block pull_request_target callers
+      if: github.event_name == 'pull_request_target'
+      shell: bash
+      run: |
+        echo "::error::Do not call this reusable workflow from pull_request_target. It runs repository code with secrets."
+        exit 1
