@@ -69,6 +69,24 @@ jobs:
           path: ~/.local/share/pnpm/store
           key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
+      - name: Cache apt packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          # Only the .deb files. apt also writes a root-owned lock and a
+          # partial/ directory the runner cannot read, and caching those
+          # makes the post-job save fail.
+          path: ~/.cache/apt/archives/*.deb
+          key: apt-${{ runner.os }}-${{ hashFiles('**/Aptfile', '**/Aptfile.lock') }}
+          restore-keys: apt-${{ runner.os }}-
+      - name: Use cached apt archives
+        run: |
+          mkdir -p "${HOME}/.cache/apt/archives"
+          # The _apt sandbox user downloads into this directory. Home is
+          # sometimes not traversable by other users, which makes apt fall
+          # back to an unsandboxed download.
+          chmod o+x "${HOME}" "${HOME}/.cache"
+          chmod 755 "${HOME}/.cache/apt" "${HOME}/.cache/apt/archives"
+          printf 'Dir::Cache::Archives "%s/.cache/apt/archives";\n' "${HOME}" | sudo tee /etc/apt/apt.conf.d/99-ci-cache >/dev/null
       - name: Run CI task
         timeout-minutes: 15
         env:
