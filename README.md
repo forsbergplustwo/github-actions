@@ -177,8 +177,6 @@ on:
 
 jobs:
   prettier:
-    permissions:
-      contents: write
     uses: forsbergplustwo/github-actions/.github/workflows/prettier.yml@<full-commit-sha>
     secrets:
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
@@ -193,8 +191,6 @@ on: [pull_request]
 
 jobs:
   standard:
-    permissions:
-      contents: write
     uses: forsbergplustwo/github-actions/.github/workflows/standard.yml@<full-commit-sha>
     secrets:
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
