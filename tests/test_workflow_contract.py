@@ -36,6 +36,23 @@ class WorkflowContractTests(unittest.TestCase):
             content = (WORKFLOWS_DIR / workflow_name).read_text()
             self.assertIn(expected_task_line, content, workflow_name)
 
+    def test_ci_caches_apt_packages_from_aptfile(self):
+        content = (WORKFLOWS_DIR / "ci.yml").read_text()
+        self.assertIn("name: Cache apt packages", content)
+        self.assertIn("path: /var/cache/apt/archives/*.deb", content)
+        self.assertIn(
+            "key: apt-${{ runner.os }}-${{ hashFiles('**/Aptfile', '**/Aptfile.lock') }}",
+            content,
+        )
+        self.assertIn("restore-keys: apt-${{ runner.os }}-", content)
+        self.assertNotIn("Dir::Cache::Archives", content)
+        self.assertNotIn("chmod o+x", content)
+        prepare_at = content.index("sudo chown \"$USER\" /var/cache/apt/archives")
+        cache_at = content.index("name: Cache apt packages")
+        run_at = content.index("run: mise run ci")
+        self.assertLess(prepare_at, cache_at)
+        self.assertLess(cache_at, run_at)
+
 
 class ReadmeContractTests(unittest.TestCase):
     def test_readme_documents_required_tasks(self):
