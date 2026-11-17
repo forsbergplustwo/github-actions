@@ -16,7 +16,7 @@ class WorkflowContractTests(unittest.TestCase):
             "master_key: ${{ secrets.master_key }}",
         ],
         "ci-ruby.yml": [
-            "run: mise run test",
+            "uses: $/.github/actions/run-ruby-tests",
             "run: mise run lint:ruby",
             "run: mise run security",
             "run: mise run lint:erb",
@@ -64,6 +64,7 @@ class WorkflowContractTests(unittest.TestCase):
     def test_shared_actions_exist(self):
         for action in (
             "setup-rails",
+            "run-ruby-tests",
             "cache-apt",
             "commit-autofixes",
             "setup-mise",
@@ -78,6 +79,17 @@ class WorkflowContractTests(unittest.TestCase):
             (ACTIONS_DIR / "ruby-deps" / "action.yml").exists(),
             "ruby-deps should be folded into setup-rails",
         )
+
+    def test_run_ruby_tests_resolves_mise_tasks_then_fallback(self):
+        action = (ACTIONS_DIR / "run-ruby-tests" / "action.yml").read_text()
+        self.assertIn("mise tasks info test:ruby", action)
+        self.assertIn("mise run test:ruby", action)
+        self.assertIn("mise tasks info test", action)
+        self.assertIn("mise run test", action)
+        self.assertIn("mise tasks info setup", action)
+        self.assertIn("mise run setup", action)
+        self.assertIn("bin/rails test", action)
+        self.assertIn("bundle exec rake test", action)
 
     def test_implementation_workflows_enable_mise_experimental(self):
         for workflow_name in ("ci-ruby.yml", "ci-js.yml", "deploy.yml"):
@@ -195,10 +207,16 @@ class WorkflowContractTests(unittest.TestCase):
         action = (ACTIONS_DIR / "commit-autofixes" / "action.yml").read_text()
         self.assertIn('git commit -m "Apply ${{ inputs.name }} autofixes"', action)
         self.assertIn("inputs.step_outcome == 'failure'", action)
+        self.assertIn("github.head_ref", action)
         for workflow_name, tool in (("ci-ruby.yml", "RuboCop"), ("ci-js.yml", "Prettier")):
             content = (WORKFLOWS_DIR / workflow_name).read_text()
             self.assertIn("uses: $/.github/actions/commit-autofixes", content, workflow_name)
             self.assertIn(f"name: {tool}", content, workflow_name)
+            self.assertIn(
+                "inputs.autofix && github.event_name == 'pull_request'",
+                content,
+                workflow_name,
+            )
             self.assertNotIn("git config user.name", content, workflow_name)
             self.assertNotIn("autofixes_found=", content, workflow_name)
 
