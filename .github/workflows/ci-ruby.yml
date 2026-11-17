@@ -68,7 +68,7 @@ jobs:
           js: ${{ inputs.rails && inputs.test }}
           bundle_token: ${{ secrets.bundle_token }}
       - name: Cache apt packages
-        if: ${{ inputs.rails && inputs.test }}
+        if: ${{ inputs.rails && inputs.test && hashFiles('Aptfile', '**/Aptfile') != '' }}
         uses: $/.github/actions/cache-apt
 
   test:
@@ -108,7 +108,7 @@ jobs:
           mode: restore
           js: ${{ inputs.rails }}
       - name: Cache apt packages
-        if: ${{ inputs.rails }}
+        if: ${{ inputs.rails && hashFiles('Aptfile', '**/Aptfile') != '' }}
         uses: $/.github/actions/cache-apt
       - name: Run tests
         timeout-minutes: 15

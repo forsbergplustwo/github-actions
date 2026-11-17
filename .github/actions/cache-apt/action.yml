@@ -1,13 +1,25 @@
 name: Cache apt packages
-description: Make apt archives writable and cache .deb packages keyed by Aptfile.
+description: Make apt archives writable and cache .deb packages keyed by Aptfile (no-op when Aptfile is absent).
 
 runs:
   using: composite
   steps:
+    - name: Skip when Aptfile is missing
+      id: aptfile
+      shell: bash
+      run: |
+        if [ -f Aptfile ] || [ -f Aptfile.lock ]; then
+          echo "present=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "No Aptfile; skipping apt cache"
+          echo "present=false" >> "$GITHUB_OUTPUT"
+        fi
     - name: Make apt archives writable for the cache
+      if: steps.aptfile.outputs.present == 'true'
       shell: bash
       run: sudo chown "$USER" /var/cache/apt/archives
     - name: Cache apt packages
+      if: steps.aptfile.outputs.present == 'true'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: /var/cache/apt/archives/*.deb

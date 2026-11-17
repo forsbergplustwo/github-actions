@@ -119,7 +119,15 @@ class WorkflowContractTests(unittest.TestCase):
         workflow = (WORKFLOWS_DIR / "ci-ruby.yml").read_text()
         action = (ACTIONS_DIR / "cache-apt" / "action.yml").read_text()
         self.assertIn("uses: $/.github/actions/cache-apt", workflow)
-        self.assertIn("if: ${{ inputs.rails && inputs.test }}", workflow)
+        self.assertIn(
+            "if: ${{ inputs.rails && inputs.test && hashFiles('Aptfile', '**/Aptfile') != '' }}",
+            workflow,
+        )
+        self.assertIn(
+            "if: ${{ inputs.rails && hashFiles('Aptfile', '**/Aptfile') != '' }}",
+            workflow,
+        )
+        self.assertIn("No Aptfile; skipping apt cache", action)
         self.assertIn("path: /var/cache/apt/archives/*.deb", action)
         self.assertIn(
             "key: apt-${{ runner.os }}-${{ hashFiles('**/Aptfile', '**/Aptfile.lock') }}",

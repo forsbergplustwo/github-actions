@@ -48,6 +48,25 @@ Workflows call `mise run <task>` in the caller repo.
 
 Also define install helpers the tasks depend on (`install`, `install:ruby`, `install:js`, `setup`) as needed.
 
+If the app uses an `Aptfile`, add an `install:aptfile` task that **no-ops when the file is missing** (and only runs under GitHub Actions). `cache-apt` in CI also skips when there is no Aptfile.
+
+```toml
+[tasks."install:aptfile"]
+description = "Install OS packages from Aptfile when running in GitHub Actions"
+run = """
+if [ "${GITHUB_ACTIONS:-}" != "true" ]; then
+  echo "Skipping install:aptfile outside GitHub Actions"
+  exit 0
+fi
+if [ ! -f Aptfile ]; then
+  echo "Skipping install:aptfile: no Aptfile"
+  exit 0
+fi
+sudo apt-get update -qq
+xargs -a Aptfile sudo apt-get install -yqq
+"""
+```
+
 ### Rails `mise.toml` example
 
 ```toml
