@@ -46,7 +46,10 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: $/.github/workflows/ci-ruby.yml
+    # Fully-qualified ref required: nested `$/` workflow calls fail with
+    # startup_failure when the top-level caller is a different repository.
+    # Keep this ref in sync with the branch/tag callers pin on ci-rails.
+    uses: forsbergplustwo/github-actions/.github/workflows/ci-ruby.yml@consolidate-ci-reusable-workflows
     with:
       rails: true
       app_name: ${{ inputs.app_name }}

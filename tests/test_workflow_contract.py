@@ -10,7 +10,7 @@ ACTIONS_DIR = ROOT / ".github" / "actions"
 class WorkflowContractTests(unittest.TestCase):
     WORKFLOWS = {
         "ci-rails.yml": [
-            "uses: $/.github/workflows/ci-ruby.yml",
+            "uses: forsbergplustwo/github-actions/.github/workflows/ci-ruby.yml@",
             "rails: true",
             "app_name: ${{ inputs.app_name }}",
             "master_key: ${{ secrets.master_key }}",
@@ -150,11 +150,19 @@ class WorkflowContractTests(unittest.TestCase):
 
     def test_ci_rails_is_thin_wrapper_over_ci_ruby(self):
         rails = (WORKFLOWS_DIR / "ci-rails.yml").read_text()
-        self.assertIn("uses: $/.github/workflows/ci-ruby.yml", rails)
+        self.assertIn(
+            "uses: forsbergplustwo/github-actions/.github/workflows/ci-ruby.yml@",
+            rails,
+        )
         self.assertIn("rails: true", rails)
         self.assertNotIn("setup-rails", rails)
         self.assertNotIn("run: mise run", rails)
         self.assertNotIn("services:", rails)
+
+    def test_commit_autofixes_only_stages_tracked_files(self):
+        action = (ACTIONS_DIR / "commit-autofixes" / "action.yml").read_text()
+        self.assertIn("git add -u", action)
+        self.assertNotIn("git add -A", action)
 
     def test_ruby_implementation_does_not_call_split_setup_actions(self):
         content = (WORKFLOWS_DIR / "ci-ruby.yml").read_text()
