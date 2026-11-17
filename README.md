@@ -29,7 +29,7 @@ Call Rails apps with `ci-rails.yml` only (not both). `ci-rails` is a thin wrappe
 
 Each check is its own job. Do not fold them into a single `mise run ci` job.
 
-Dependencies are installed **once** in the Install job and written to `actions/cache`. Check jobs use `needs: install`, then restore the same cache keys (`vendor/bundle` for Ruby, `node_modules` + pnpm store for JS). That covers both within-run sharing and reuse across PRs/branches when the lockfile is unchanged. Shared setup lives in composite actions under `.github/actions/` (`setup-rails` for checkout/mise/gems/JS, `cache-apt` for Aptfile packages, `commit-autofixes` for lint/format push-backs, `setup-mise` + `js-deps` for JS-only workflows).
+Dependencies are installed **once** in the Install job and written to `actions/cache`. Check jobs use `needs: install`, then restore the same cache keys (`vendor/bundle` for Ruby, `node_modules` + pnpm store for JS). That covers both within-run sharing and reuse across PRs/branches when the lockfile is unchanged. Shared setup lives in composite actions under `.github/actions/` (`setup-rails` for checkout/mise/gems/JS, `run-ruby-tests` for the Ruby/Rails test command, `cache-apt` for Aptfile packages, `commit-autofixes` for lint/format push-backs, `setup-mise` + `js-deps` for JS-only workflows).
 
 ## CI task contract (mise)
 
@@ -37,11 +37,14 @@ Workflows call `mise run <task>` in the caller repo.
 
 | Task | Used by |
 | --- | --- |
-| `test` | Tests job |
+| `test:ruby` or `test` | Ruby/Rails Tests job (see resolution below) |
 | `lint:ruby` | RuboCop job |
 | `security` | Brakeman job |
 | `lint:erb` | ERB Lint job (off by default) |
 | `lint:js` | Prettier job |
+| `test` | JS Tests job (`ci-js.yml`, off by default) |
+
+**Ruby test resolution** (`run-ruby-tests`): `mise run test:ruby` if that task exists, else `mise run test`, else `bin/rails test` / `bin/rake test` / `bundle exec rake test` (first executable found). Prefer defining `test` or `test:ruby` when the suite needs setup (DB, env copy, `test:all`, etc.).
 
 Also define install helpers the tasks depend on (`install`, `install:ruby`, `install:js`, `setup`) as needed.
 

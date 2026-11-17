@@ -1,0 +1,29 @@
+name: Run Ruby tests
+description: >
+  Run the caller repo's Ruby test suite via mise task test:ruby, then test,
+  otherwise a conventional Rails/Ruby test command.
+
+runs:
+  using: composite
+  steps:
+    - name: Run Ruby tests
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if mise tasks info test:ruby >/dev/null 2>&1; then
+          echo "Using mise task test:ruby"
+          mise run test:ruby
+        elif mise tasks info test >/dev/null 2>&1; then
+          echo "Using mise task test"
+          mise run test
+        elif [ -x bin/rails ]; then
+          echo "No mise test task; falling back to bin/rails test"
+          bin/rails test
+        elif [ -x bin/rake ]; then
+          echo "No mise test task; falling back to bin/rake test"
+          bin/rake test
+        else
+          echo "No mise test task; falling back to bundle exec rake test"
+          bundle exec rake test
+        fi

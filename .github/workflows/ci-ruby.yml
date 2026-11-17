@@ -110,9 +110,9 @@ jobs:
       - name: Cache apt packages
         if: ${{ inputs.rails }}
         uses: $/.github/actions/cache-apt
-      - name: Run test task
+      - name: Run tests
         timeout-minutes: 15
-        run: mise run test
+        uses: $/.github/actions/run-ruby-tests
       - name: Upload screenshots
         if: ${{ failure() && inputs.rails }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
