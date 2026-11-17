@@ -50,7 +50,6 @@ jobs:
       - name: Set up mise
         uses: $/.github/actions/setup-mise
         with:
-          fetch_depth: "0"
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ secrets.bundle_token }}
       - name: Restore JS dependencies

@@ -132,7 +132,6 @@ jobs:
         uses: $/.github/actions/setup-rails
         with:
           mode: restore
-          fetch_depth: "0"
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ secrets.bundle_token }}
       - name: Run Ruby lint task

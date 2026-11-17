@@ -13,16 +13,12 @@ inputs:
     description: GitHub token for private gems (install mode only)
     required: false
     default: ""
-  fetch_depth:
-    description: git fetch depth for actions/checkout
-    required: false
-    default: "1"
   ref:
-    description: Optional git ref to check out (for autofix jobs)
+    description: Git ref to check out (with token) for autofix push-backs
     required: false
     default: ""
   token:
-    description: Optional token for actions/checkout (for autofix pushes)
+    description: Checkout token for autofix push-backs (also sets ref checkout)
     required: false
     default: ""
 
@@ -36,27 +32,12 @@ runs:
         echo "::error::Do not call this reusable workflow from pull_request_target. It runs repository code with secrets."
         exit 1
     - name: Checkout
-      if: inputs.ref == '' && inputs.token == ''
+      if: inputs.token == ''
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - name: Checkout for autofix
+      if: inputs.token != ''
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
-        fetch-depth: ${{ inputs.fetch_depth }}
-    - name: Checkout with ref
-      if: inputs.ref != '' && inputs.token == ''
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        fetch-depth: ${{ inputs.fetch_depth }}
-        ref: ${{ inputs.ref }}
-    - name: Checkout with token
-      if: inputs.ref == '' && inputs.token != ''
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        fetch-depth: ${{ inputs.fetch_depth }}
-        token: ${{ inputs.token }}
-    - name: Checkout with ref and token
-      if: inputs.ref != '' && inputs.token != ''
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        fetch-depth: ${{ inputs.fetch_depth }}
         ref: ${{ inputs.ref }}
         token: ${{ inputs.token }}
     - name: Set up mise
