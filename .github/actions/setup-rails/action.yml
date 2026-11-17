@@ -1,0 +1,83 @@
+name: Setup Rails
+description: Checkout, mise, Ruby gems, and optional JS deps (install once or restore from actions/cache).
+
+inputs:
+  mode:
+    description: install or restore
+    required: true
+  js:
+    description: Also install/restore JS deps when pnpm-lock.yaml is present
+    required: false
+    default: "false"
+  bundle_token:
+    description: GitHub token for private gems (install mode only)
+    required: false
+    default: ""
+  ref:
+    description: Git ref to check out (with token) for autofix push-backs
+    required: false
+    default: ""
+  token:
+    description: Checkout token for autofix push-backs (also sets ref checkout)
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Block pull_request_target callers
+      if: github.event_name == 'pull_request_target'
+      shell: bash
+      run: |
+        echo "::error::Do not call this reusable workflow from pull_request_target. It runs repository code with secrets."
+        exit 1
+    - name: Checkout
+      if: inputs.token == ''
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - name: Checkout for autofix
+      if: inputs.token != ''
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ inputs.ref }}
+        token: ${{ inputs.token }}
+    - name: Set up mise
+      uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+      with:
+        cache: true
+    - name: Cache Ruby gems
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: vendor/bundle
+        key: bundle-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock', '**/.tool-versions', '**/mise.toml') }}
+        restore-keys: bundle-${{ runner.os }}-
+    - name: Install Ruby gems
+      if: inputs.mode == 'install'
+      shell: bash
+      env:
+        BUNDLE_GITHUB__COM: x-access-token:${{ inputs.bundle_token }}
+        BUNDLE_PATH: ${{ github.workspace }}/vendor/bundle
+        RUBYOPT: -W:no-deprecated
+      run: |
+        if mise tasks --json 2>/dev/null | grep -q '"name": "install:ruby"'; then
+          mise run install:ruby
+        else
+          mise run install
+        fi
+    - name: Cache JS dependencies
+      if: inputs.js == 'true' && hashFiles('**/pnpm-lock.yaml') != ''
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          **/node_modules
+          ~/.local/share/pnpm/store
+        key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: pnpm-${{ runner.os }}-
+    - name: Install JS dependencies
+      if: inputs.mode == 'install' && inputs.js == 'true' && hashFiles('**/pnpm-lock.yaml') != ''
+      shell: bash
+      run: |
+        if mise tasks --json 2>/dev/null | grep -q '"name": "install:js"'; then
+          mise run install:js
+        else
+          pnpm install --frozen-lockfile
+        fi

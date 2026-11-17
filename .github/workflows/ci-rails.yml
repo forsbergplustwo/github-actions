@@ -1,0 +1,66 @@
+name: CI Rails
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        required: true
+        type: string
+      database_name:
+        required: false
+        type: string
+        default: ""
+      postgres_image:
+        required: false
+        type: string
+        default: postgres:13-alpine
+      test:
+        required: false
+        type: boolean
+        default: false
+      rubocop:
+        required: false
+        type: boolean
+        default: true
+      brakeman:
+        required: false
+        type: boolean
+        default: true
+      lint_erb:
+        required: false
+        type: boolean
+        default: false
+      autofix:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      master_key:
+        required: true
+      bundle_token:
+        required: true
+
+# Do not set workflow-level permissions here: a contents: read default would
+# downgrade the caller's token for the nested ci-ruby call and cause
+# startup_failure when RuboCop needs contents: write.
+
+jobs:
+  ci:
+    name: CI
+    # Fully-qualified ref required: nested `$/` workflow calls fail with
+    # startup_failure when the top-level caller is a different repository.
+    # Keep this ref on @main (same pin callers use for ci-rails).
+    uses: forsbergplustwo/github-actions/.github/workflows/ci-ruby.yml@main
+    with:
+      rails: true
+      app_name: ${{ inputs.app_name }}
+      database_name: ${{ inputs.database_name }}
+      postgres_image: ${{ inputs.postgres_image }}
+      test: ${{ inputs.test }}
+      rubocop: ${{ inputs.rubocop }}
+      brakeman: ${{ inputs.brakeman }}
+      lint_erb: ${{ inputs.lint_erb }}
+      autofix: ${{ inputs.autofix }}
+    secrets:
+      bundle_token: ${{ secrets.bundle_token }}
+      master_key: ${{ secrets.master_key }}

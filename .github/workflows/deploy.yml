@@ -11,12 +11,13 @@ on:
 permissions:
   contents: read
 
+env:
+  MISE_EXPERIMENTAL: true
+
 jobs:
   deploy:
     name: Deploy Shopify Extensions
     runs-on: ubuntu-latest
-    env:
-      MISE_EXPERIMENTAL: true
     steps:
       - name: Block pull_request_target callers
         uses: $/.github/actions/block-pull-request-target

@@ -1,0 +1,35 @@
+name: Setup mise
+description: Block pull_request_target callers, check out the caller repo, and set up mise.
+
+inputs:
+  ref:
+    description: Git ref to check out (with token) for autofix push-backs
+    required: false
+    default: ""
+  token:
+    description: Checkout token for autofix push-backs (also sets ref checkout)
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Block pull_request_target callers
+      if: github.event_name == 'pull_request_target'
+      shell: bash
+      run: |
+        echo "::error::Do not call this reusable workflow from pull_request_target. It runs repository code with secrets."
+        exit 1
+    - name: Checkout
+      if: inputs.token == ''
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - name: Checkout for autofix
+      if: inputs.token != ''
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ inputs.ref }}
+        token: ${{ inputs.token }}
+    - name: Set up mise
+      uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+      with:
+        cache: true

@@ -1,0 +1,172 @@
+name: CI Ruby
+
+on:
+  workflow_call:
+    inputs:
+      rails:
+        description: Enable Rails test stack (Postgres, Redis, apt, JS, master key)
+        required: false
+        type: boolean
+        default: false
+      app_name:
+        required: false
+        type: string
+        default: ""
+      database_name:
+        required: false
+        type: string
+        default: ""
+      postgres_image:
+        required: false
+        type: string
+        default: postgres:13-alpine
+      test:
+        required: false
+        type: boolean
+        default: true
+      rubocop:
+        required: false
+        type: boolean
+        default: true
+      brakeman:
+        required: false
+        type: boolean
+        default: false
+      lint_erb:
+        required: false
+        type: boolean
+        default: false
+      autofix:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      bundle_token:
+        required: true
+      master_key:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  MISE_EXPERIMENTAL: true
+  BUNDLE_PATH: ${{ github.workspace }}/vendor/bundle
+  BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
+  RUBYOPT: -W:no-deprecated
+
+jobs:
+  install:
+    name: Install
+    if: ${{ inputs.test || inputs.rubocop || inputs.brakeman || inputs.lint_erb }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Rails
+        uses: $/.github/actions/setup-rails
+        with:
+          mode: install
+          js: ${{ inputs.rails && inputs.test }}
+          bundle_token: ${{ secrets.bundle_token }}
+      - name: Cache apt packages
+        if: ${{ inputs.rails && inputs.test }}
+        uses: $/.github/actions/cache-apt
+
+  test:
+    name: Tests
+    if: ${{ inputs.test }}
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: ${{ inputs.rails && inputs.postgres_image || '' }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: ${{ inputs.database_name != '' && inputs.database_name || format('{0}_test', inputs.app_name) }}
+          POSTGRES_PASSWORD: ""
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: ${{ inputs.rails && 'redis:alpine' || '' }}
+        ports: ["6379:6379"]
+        options: --entrypoint redis-server
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
+      NODE_NO_WARNINGS: 1
+      REDIS_URL: redis://localhost:6379/0
+      RAILS_ENV: test
+      RAILS_MASTER_KEY: ${{ secrets.master_key }}
+    steps:
+      - name: Set up Rails
+        uses: $/.github/actions/setup-rails
+        with:
+          mode: restore
+          js: ${{ inputs.rails }}
+      - name: Cache apt packages
+        if: ${{ inputs.rails }}
+        uses: $/.github/actions/cache-apt
+      - name: Run test task
+        timeout-minutes: 15
+        run: mise run test
+      - name: Upload screenshots
+        if: ${{ failure() && inputs.rails }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: screenshots
+          path: tmp/screenshots
+
+  rubocop:
+    name: RuboCop
+    if: ${{ inputs.rubocop }}
+    needs: install
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Set up Rails
+        uses: $/.github/actions/setup-rails
+        with:
+          mode: restore
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.bundle_token }}
+      - name: Run Ruby lint task
+        id: rubocop
+        continue-on-error: ${{ inputs.autofix }}
+        run: mise run lint:ruby
+      - name: Commit autofixes
+        if: ${{ inputs.autofix }}
+        uses: $/.github/actions/commit-autofixes
+        with:
+          name: RuboCop
+          step_outcome: ${{ steps.rubocop.outcome }}
+
+  brakeman:
+    name: Brakeman
+    if: ${{ inputs.brakeman }}
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Rails
+        uses: $/.github/actions/setup-rails
+        with:
+          mode: restore
+      - name: Run security task
+        run: mise run security
+
+  erb_lint:
+    name: ERB Lint
+    if: ${{ inputs.lint_erb }}
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Rails
+        uses: $/.github/actions/setup-rails
+        with:
+          mode: restore
+      - name: Run ERB lint task
+        run: mise run lint:erb
