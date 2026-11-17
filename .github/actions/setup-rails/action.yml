@@ -44,6 +44,24 @@ runs:
       uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
       with:
         cache: true
+    - name: Skip install:aptfile when Aptfile is missing
+      shell: bash
+      run: |
+        # Callers often depend on install:aptfile; without an Aptfile that task
+        # fails (xargs -a Aptfile). Override via mise.local.toml (CI workspace
+        # only, untracked) so each repo does not need its own guard.
+        if [ -f Aptfile ]; then
+          exit 0
+        fi
+        if ! mise tasks info install:aptfile >/dev/null 2>&1; then
+          exit 0
+        fi
+        echo "No Aptfile; overriding install:aptfile to a no-op"
+        {
+          echo '[tasks."install:aptfile"]'
+          echo 'description = "No-op: Aptfile not present in this repository"'
+          echo 'run = "echo Skipping install:aptfile: no Aptfile; exit 0"'
+        } >> mise.local.toml
     - name: Cache Ruby gems
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
