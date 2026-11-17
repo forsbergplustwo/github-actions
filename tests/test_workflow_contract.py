@@ -86,6 +86,8 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("mise run test:ruby", action)
         self.assertIn("mise tasks info test", action)
         self.assertIn("mise run test", action)
+        self.assertIn("mise tasks info setup", action)
+        self.assertIn("mise run setup", action)
         self.assertIn("bin/rails test", action)
         self.assertIn("bundle exec rake test", action)
 
