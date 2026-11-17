@@ -15,8 +15,13 @@ runs:
     - name: Check for modified files
       shell: bash
       run: |
+        # Push-backs only apply to PR heads (github.head_ref). Push events to a
+        # protected default branch cannot receive direct commits.
+        if [ -z "${{ github.head_ref }}" ]; then
+          echo "Skipping autofix commit: not a pull_request head"
+          echo "autofixes_found=false" >> "$GITHUB_ENV"
         # Ignore untracked cache dirs (vendor/bundle, node_modules); only tracked edits matter.
-        if [ -n "$(git status --porcelain -uno)" ]; then
+        elif [ -n "$(git status --porcelain -uno)" ]; then
           echo "autofixes_found=true" >> "$GITHUB_ENV"
         else
           echo "autofixes_found=false" >> "$GITHUB_ENV"

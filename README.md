@@ -192,7 +192,7 @@ jobs:
 | `rubocop` | `true` | |
 | `brakeman` | `true` | |
 | `lint_erb` | `false` | |
-| `autofix` | `true` | RuboCop may commit and push fixes on pull requests |
+| `autofix` | `true` | RuboCop/Prettier may commit and push fixes on **pull_request** only (not on default-branch pushes; those refs are often protected) |
 
 ### `ci-ruby.yml` inputs
 

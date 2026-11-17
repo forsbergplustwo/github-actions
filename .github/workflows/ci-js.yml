@@ -50,18 +50,19 @@ jobs:
       - name: Set up mise
         uses: $/.github/actions/setup-mise
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          token: ${{ secrets.bundle_token }}
+          # Autofix push-backs only work on PR heads; default-branch pushes are often protected.
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || '' }}
+          token: ${{ github.event_name == 'pull_request' && secrets.bundle_token || '' }}
       - name: Restore JS dependencies
         uses: $/.github/actions/js-deps
         with:
           mode: restore
       - name: Run formatter task
         id: prettier
-        continue-on-error: ${{ inputs.autofix }}
+        continue-on-error: ${{ inputs.autofix && github.event_name == 'pull_request' }}
         run: mise run lint:js
       - name: Commit autofixes
-        if: ${{ inputs.autofix }}
+        if: ${{ inputs.autofix && github.event_name == 'pull_request' }}
         uses: $/.github/actions/commit-autofixes
         with:
           name: Prettier
