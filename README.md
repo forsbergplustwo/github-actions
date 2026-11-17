@@ -44,7 +44,7 @@ Workflows call `mise run <task>` in the caller repo.
 | `lint:js` | Prettier job |
 | `test` | JS Tests job (`ci-js.yml`, off by default) |
 
-**Ruby test resolution** (`run-ruby-tests`): `mise run test:ruby` if that task exists, else `mise run test`, else `bin/rails test` / `bin/rake test` / `bundle exec rake test` (first executable found). Prefer defining `test` or `test:ruby` when the suite needs setup (DB, env copy, `test:all`, etc.).
+**Ruby test resolution** (`run-ruby-tests`): `mise run test:ruby` if that task exists, else `mise run test`, else (optional `mise run setup` when present) then `bin/rails test` / `bin/rake test` / `bundle exec rake test`. Prefer defining `test` or `test:ruby` when the suite needs custom steps (env copy, `test:all`, etc.).
 
 Also define install helpers the tasks depend on (`install`, `install:ruby`, `install:js`, `setup`) as needed.
 
