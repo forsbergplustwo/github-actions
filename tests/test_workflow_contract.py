@@ -16,7 +16,7 @@ class WorkflowContractTests(unittest.TestCase):
             "master_key: ${{ secrets.master_key }}",
         ],
         "ci-ruby.yml": [
-            "run: mise run test",
+            "uses: $/.github/actions/run-ruby-tests",
             "run: mise run lint:ruby",
             "run: mise run security",
             "run: mise run lint:erb",
@@ -64,6 +64,7 @@ class WorkflowContractTests(unittest.TestCase):
     def test_shared_actions_exist(self):
         for action in (
             "setup-rails",
+            "run-ruby-tests",
             "cache-apt",
             "commit-autofixes",
             "setup-mise",
@@ -78,6 +79,15 @@ class WorkflowContractTests(unittest.TestCase):
             (ACTIONS_DIR / "ruby-deps" / "action.yml").exists(),
             "ruby-deps should be folded into setup-rails",
         )
+
+    def test_run_ruby_tests_resolves_mise_tasks_then_fallback(self):
+        action = (ACTIONS_DIR / "run-ruby-tests" / "action.yml").read_text()
+        self.assertIn("mise tasks info test:ruby", action)
+        self.assertIn("mise run test:ruby", action)
+        self.assertIn("mise tasks info test", action)
+        self.assertIn("mise run test", action)
+        self.assertIn("bin/rails test", action)
+        self.assertIn("bundle exec rake test", action)
 
     def test_implementation_workflows_enable_mise_experimental(self):
         for workflow_name in ("ci-ruby.yml", "ci-js.yml", "deploy.yml"):
