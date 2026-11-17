@@ -15,7 +15,8 @@ runs:
     - name: Check for modified files
       shell: bash
       run: |
-        if [ -n "$(git status --porcelain)" ]; then
+        # Ignore untracked cache dirs (vendor/bundle, node_modules); only tracked edits matter.
+        if [ -n "$(git status --porcelain -uno)" ]; then
           echo "autofixes_found=true" >> "$GITHUB_ENV"
         else
           echo "autofixes_found=false" >> "$GITHUB_ENV"
