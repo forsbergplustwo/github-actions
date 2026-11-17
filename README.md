@@ -48,6 +48,8 @@ Workflows call `mise run <task>` in the caller repo.
 
 Also define install helpers the tasks depend on (`install`, `install:ruby`, `install:js`, `setup`) as needed.
 
+If a caller defines `install:aptfile` but has no `Aptfile`, `setup-rails` overrides that task to a no-op for the CI run (via `mise.local.toml`) so Install/Tests do not fail on `xargs -a Aptfile`.
+
 ### Rails `mise.toml` example
 
 ```toml

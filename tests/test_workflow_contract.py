@@ -141,6 +141,12 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertNotIn("download-artifact", content)
         self.assertNotIn("vendor-bundle.tar", content)
 
+    def test_setup_rails_noop_install_aptfile_without_aptfile(self):
+        content = (ACTIONS_DIR / "setup-rails" / "action.yml").read_text()
+        self.assertIn("Skip install:aptfile when Aptfile is missing", content)
+        self.assertIn("mise.local.toml", content)
+        self.assertIn('echo \'[tasks."install:aptfile"]\'', content)
+
     def test_js_deps_uses_actions_cache_only(self):
         content = (ACTIONS_DIR / "js-deps" / "action.yml").read_text()
         self.assertIn("uses: actions/cache@", content)
