@@ -40,8 +40,9 @@ on:
       bundle_token:
         required: true
 
-permissions:
-  contents: read
+# Do not set workflow-level permissions here: a contents: read default would
+# downgrade the caller's token for the nested ci-ruby call and cause
+# startup_failure when RuboCop needs contents: write.
 
 jobs:
   ci:
