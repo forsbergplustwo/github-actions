@@ -113,12 +113,21 @@ run = "pnpm run lint:js"
 
 ## Caller setup
 
+Pin callers at `@main` (merge this repo first, then land caller PRs).
+
+**Triggers:** use `pull_request` for branch work and `push` only on the default branch. `on: [push, pull_request]` double-fires on every PR update (different refs, so concurrency does not cancel the pair) and floods the Checks tab with duplicate / skipped jobs.
+
+**Tests:** set `test: true` on Rails callers so the suite runs on PRs and on default-branch pushes. Leave ERB Lint / JS Tests off unless the repo defines those mise tasks; skipped jobs still show in Checks — mark only the jobs you care about as required branch checks.
+
 ### Rails app (with JS lint)
 
 ```yaml
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main] # or master / develop — the repo default branch
+  pull_request:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -131,7 +140,7 @@ jobs:
     uses: forsbergplustwo/github-actions/.github/workflows/ci-rails.yml@main
     with:
       app_name: your_app
-      test: ${{ github.event_name == 'push' }}
+      test: true
     secrets:
       master_key: ${{ secrets.MASTER_KEY }}
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
@@ -144,14 +153,15 @@ jobs:
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
 ```
 
-`test: ${{ github.event_name == 'push' }}` keeps the test suite on pushes so pull requests are not held up by the suite.
-
 ### Ruby gem / non-Rails repo
 
 ```yaml
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main] # or master — the repo default branch
+  pull_request:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -175,7 +185,7 @@ jobs:
 | `app_name` | required | Used for the default database name |
 | `database_name` | `<app_name>_test` | Override when the DB name differs |
 | `postgres_image` | `postgres:13-alpine` | |
-| `test` | `false` | Turn on for push with the expression above |
+| `test` | `false` | Set `true` so Tests run on PRs and default-branch pushes |
 | `rubocop` | `true` | |
 | `brakeman` | `true` | |
 | `lint_erb` | `false` | |
@@ -185,6 +195,7 @@ jobs:
 
 | Input | Default |
 | --- | --- |
+| `rails` | `false` | Prefer `ci-rails.yml` for Rails apps |
 | `test` | `true` |
 | `rubocop` | `true` |
 | `brakeman` | `false` |
@@ -199,7 +210,7 @@ jobs:
 | `test` | `false` |
 | `autofix` | `true` |
 
-Set a flag to `false` when that repo has no matching mise task. The job still appears as skipped.
+Set a flag to `false` when that repo has no matching mise task. The job still appears as skipped in Checks; do not mark those as required.
 
 Do not enable `pull_request_target` on caller workflows. These reusable workflows check out and run repository code with secrets, and they refuse `pull_request_target` callers.
 

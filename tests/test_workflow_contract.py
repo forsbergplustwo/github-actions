@@ -227,7 +227,8 @@ class ReadmeContractTests(unittest.TestCase):
         self.assertIn("ci-rails.yml@main", content)
         self.assertIn("ci-ruby.yml@main", content)
         self.assertIn("ci-js.yml@main", content)
-        self.assertIn("test: ${{ github.event_name == 'push' }}", content)
+        self.assertIn("test: true", content)
+        self.assertIn("branches: [main]", content)
 
     def test_readme_documents_shared_install_via_cache(self):
         content = (ROOT / "README.md").read_text()
