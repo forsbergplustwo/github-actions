@@ -1,0 +1,37 @@
+name: Commit autofixes
+description: Commit and push lint/format autofixes, then fail if the preceding check failed.
+
+inputs:
+  name:
+    description: Tool name used in the commit message and logs (e.g. RuboCop, Prettier)
+    required: true
+  step_outcome:
+    description: Outcome of the lint/format step (success or failure)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check for modified files
+      shell: bash
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "autofixes_found=true" >> "$GITHUB_ENV"
+        else
+          echo "autofixes_found=false" >> "$GITHUB_ENV"
+        fi
+    - name: Commit autofixes
+      if: env.autofixes_found == 'true'
+      shell: bash
+      run: |
+        echo "::group::Committing ${{ inputs.name }} fixes"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add -A
+        git commit -m "Apply ${{ inputs.name }} autofixes" || echo "No changes to commit"
+        git push
+        echo "::endgroup::"
+    - name: Fail if check failed
+      if: inputs.step_outcome == 'failure'
+      shell: bash
+      run: exit 1

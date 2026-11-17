@@ -1,0 +1,62 @@
+name: CI Rails
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        required: true
+        type: string
+      database_name:
+        required: false
+        type: string
+        default: ""
+      postgres_image:
+        required: false
+        type: string
+        default: postgres:13-alpine
+      test:
+        required: false
+        type: boolean
+        default: false
+      rubocop:
+        required: false
+        type: boolean
+        default: true
+      brakeman:
+        required: false
+        type: boolean
+        default: true
+      lint_erb:
+        required: false
+        type: boolean
+        default: false
+      autofix:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      master_key:
+        required: true
+      bundle_token:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    uses: $/.github/workflows/ci-ruby.yml
+    with:
+      rails: true
+      app_name: ${{ inputs.app_name }}
+      database_name: ${{ inputs.database_name }}
+      postgres_image: ${{ inputs.postgres_image }}
+      test: ${{ inputs.test }}
+      rubocop: ${{ inputs.rubocop }}
+      brakeman: ${{ inputs.brakeman }}
+      lint_erb: ${{ inputs.lint_erb }}
+      autofix: ${{ inputs.autofix }}
+    secrets:
+      bundle_token: ${{ secrets.bundle_token }}
+      master_key: ${{ secrets.master_key }}

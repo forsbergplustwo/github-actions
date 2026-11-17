@@ -1,223 +1,217 @@
 # github-actions
 
-This repo contains our re-usable Github Actions, used by our AppKit powered apps. AppKit automatically sets up the needed files to make everything work, but you do need to add the Action Secrets as shown below.
+Reusable GitHub Actions workflows for AppKit Rails apps, other Ruby repos, and JS lint. Callers only need a short workflow file and a `mise.toml` that implements the tasks below.
 
-## Setup Action Secrets (required):
-- BUNDLE_TOKEN - Github's Personal access token (info on how to create it below)
-- MASTER_KEY - Rails credentials key from 1Password
-- SHOPIFY_CLI_PARTNERS_TOKEN - https://shopify.dev/docs/apps/tools/cli/ci-cd#generate-a-cli-authentication-token-in-the-partner-dashboard
+## Setup Action Secrets (required)
 
-Add these to the repos secrets action settings. Example: https://github.com/forsbergplustwo/app_kit/settings/secrets/actions
+- `BUNDLE_TOKEN` - GitHub personal access token with `repo` scope (private gems)
+- `MASTER_KEY` - Rails credentials key from 1Password (Rails callers)
+- `SHOPIFY_CLI_PARTNERS_TOKEN` - https://shopify.dev/docs/apps/tools/cli/ci-cd#generate-a-cli-authentication-token-in-the-partner-dashboard (deploy only)
 
-#### To create a Personal access token:
+Example: https://github.com/forsbergplustwo/app_kit/settings/secrets/actions
+
+### To create a Personal access token
+
 1. Go to https://github.com/settings/tokens
-1. Create new token with "repo" scope
-1. Choose "No expiration" or set it to a high value (eg year) in repo settings:
+1. Create a new token with the `repo` scope
+1. Choose "No expiration" or a long expiry
+
+## Workflows
+
+| Workflow | Use for | Jobs (shown separately in the Actions UI) |
+| --- | --- | --- |
+| `ci-rails.yml` | Rails apps / AppKit | Thin wrapper → `ci-ruby.yml` with `rails: true` (Postgres, Redis, apt, JS, master key) |
+| `ci-ruby.yml` | Gems, Sinatra, Jekyll, other Ruby (and the Rails implementation) | Install, Tests, RuboCop, Brakeman, ERB Lint |
+| `ci-js.yml` | JS lint (and optional JS tests) | Install, Prettier, Tests |
+| `deploy.yml` | Shopify app deploy | Deploy |
+
+Call Rails apps with `ci-rails.yml` only (not both). `ci-rails` is a thin wrapper that calls `ci-ruby` with `rails: true`; all shared jobs live in `ci-ruby.yml`.
+
+Each check is its own job. Do not fold them into a single `mise run ci` job.
+
+Dependencies are installed **once** in the Install job and written to `actions/cache`. Check jobs use `needs: install`, then restore the same cache keys (`vendor/bundle` for Ruby, `node_modules` + pnpm store for JS). That covers both within-run sharing and reuse across PRs/branches when the lockfile is unchanged. Shared setup lives in composite actions under `.github/actions/` (`setup-rails` for checkout/mise/gems/JS, `cache-apt` for Aptfile packages, `commit-autofixes` for lint/format push-backs, `setup-mise` + `js-deps` for JS-only workflows).
 
 ## CI task contract (mise)
 
-These reusable workflows are task-driven and execute `mise run <task>` in the caller repo.
-Define these tasks in your app's `mise.toml`.
+Workflows call `mise run <task>` in the caller repo.
 
-Required tasks:
-- `setup`
-- `ci`
-- `test`
-- `lint`
-- `build`
-- `dev`
+| Task | Used by |
+| --- | --- |
+| `test` | Tests job |
+| `lint:ruby` | RuboCop job |
+| `security` | Brakeman job |
+| `lint:erb` | ERB Lint job (off by default) |
+| `lint:js` | Prettier job |
 
-Optional tasks:
-- `deploy`
-- `security`
-- `format`
-- `format:write`
-- Framework-specific subtasks such as `lint:ruby` and `lint:erb`
+Also define install helpers the tasks depend on (`install`, `install:ruby`, `install:js`, `setup`) as needed.
 
 ### Rails `mise.toml` example
 
 ```toml
+[tasks.install]
+depends = ["install:ruby"]
+
+[tasks."install:ruby"]
+run = "bundle check || bundle install"
+
 [tasks.setup]
+depends = ["install:ruby"]
 run = [
-  "sudo apt-get update && sudo apt-get install -y --no-install-recommends libvips",
-  "bundle install --jobs 4 --retry 3",
-  "cp .env.example .env",
+  "test -f .env || cp .env.example .env",
   "RAILS_ENV=test bin/rails db:create db:schema:load db:migrate",
-  "RAILS_ENV=test bin/rails assets:precompile",
 ]
 
 [tasks.test]
-run = "bin/rails test:all"
+depends = ["setup"]
+run = "bin/rails test"
 
-[tasks.lint]
-run = [
-  "# TODO: choose rubocop/standardrb command",
-  "bundle exec standardrb",
-]
-
-[tasks.lint:ruby]
-run = "bundle exec standardrb"
-
-[tasks.lint:erb]
-run = "bundle exec erb_lint app/views --format compact"
+[tasks."lint:ruby"]
+depends = ["install:ruby"]
+run = "bin/rubocop -f github"
 
 [tasks.security]
+depends = ["install:ruby"]
 run = "bundle exec brakeman -q"
 
-[tasks.ci]
-depends = ["setup", "test"]
-
-[tasks.build]
-run = "bin/rails assets:precompile"
-
-[tasks.dev]
-run = "bin/dev"
-
-[tasks.deploy]
-run = "# TODO: choose your deploy command"
+[tasks."lint:js"]
+depends = ["install:js"]
+run = "pnpm run lint:js"
 ```
 
-### Nuxt `mise.toml` example
+### Ruby gem `mise.toml` example
 
 ```toml
-[tasks.setup]
-run = [
-  "corepack enable",
-  "pnpm install --frozen-lockfile",
-]
+[tasks.install]
+depends = ["install:ruby"]
+
+[tasks."install:ruby"]
+run = "bundle check || bundle install"
 
 [tasks.test]
-run = "pnpm test"
+depends = ["install:ruby"]
+run = "bundle exec rake test"
 
-[tasks.lint]
-run = "pnpm lint"
-
-[tasks.format]
-run = "pnpm prettier --check ."
-
-[tasks.format:write]
-run = "pnpm prettier --write ."
-
-[tasks.ci]
-depends = ["setup", "lint", "test"]
-
-[tasks.build]
-run = "pnpm build"
-
-[tasks.dev]
-run = "pnpm dev"
-
-[tasks.deploy]
-run = "# TODO: choose your Nuxt deployment command"
+[tasks."lint:ruby"]
+depends = ["install:ruby"]
+run = "bundle exec rubocop -f github"
 ```
 
-### Next.js `mise.toml` example
+### Nuxt / Next.js `mise.toml` example
 
 ```toml
-[tasks.setup]
-run = [
-  "corepack enable",
-  "pnpm install --frozen-lockfile",
-]
+[tasks."install:js"]
+run = "pnpm install --frozen-lockfile"
 
 [tasks.test]
+depends = ["install:js"]
 run = "pnpm test"
 
-[tasks.lint]
-run = "pnpm lint"
-
-[tasks.format]
-run = "pnpm prettier --check ."
-
-[tasks.format:write]
-run = "pnpm prettier --write ."
-
-[tasks.ci]
-depends = ["setup", "lint", "test"]
-
-[tasks.build]
-run = "pnpm build"
-
-[tasks.dev]
-run = "pnpm dev"
-
-[tasks.deploy]
-run = "# TODO: choose your Next.js deployment command"
+[tasks."lint:js"]
+depends = ["install:js"]
+run = "pnpm run lint:js"
 ```
 
-## Manual setup (non AppKit powered repo)
-- Add master.key and bundle token to repos secrets, as mentioned above
-- Add `.github/workflows` folder in repo root
-- Add a file named `ci.yml`:
+## Caller setup
+
+### Rails app (with JS lint)
 
 ```yaml
-name: Tests
+name: CI
 
-on: [push]
+on: [push, pull_request]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
-    uses: forsbergplustwo/github-actions/.github/workflows/ci.yml@<full-commit-sha>
+  rails:
+    permissions:
+      contents: write
+    uses: forsbergplustwo/github-actions/.github/workflows/ci-rails.yml@main
     with:
-      app_name: ddp
+      app_name: your_app
+      test: ${{ github.event_name == 'push' }}
     secrets:
       master_key: ${{ secrets.MASTER_KEY }}
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
 
-```
-
-- Add a file named: `prettier.yml`:
-
-```yaml
-name: Prettier
-
-on:
-  pull_request:
-    branches: [main]
-
-jobs:
-  prettier:
-    uses: forsbergplustwo/github-actions/.github/workflows/prettier.yml@<full-commit-sha>
+  js:
+    permissions:
+      contents: write
+    uses: forsbergplustwo/github-actions/.github/workflows/ci-js.yml@main
     secrets:
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
 ```
 
-- Add a file named `reviewdog.yml`:
+`test: ${{ github.event_name == 'push' }}` keeps the test suite on pushes so pull requests are not held up by the suite.
+
+### Ruby gem / non-Rails repo
 
 ```yaml
-name: Reviewdog
+name: CI
 
-on: [pull_request]
+on: [push, pull_request]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  standard:
-    uses: forsbergplustwo/github-actions/.github/workflows/standard.yml@<full-commit-sha>
-    secrets:
-      bundle_token: ${{ secrets.BUNDLE_TOKEN }}
-
-  brakeman:
-    uses: forsbergplustwo/github-actions/.github/workflows/brakeman.yml@<full-commit-sha>
-    secrets:
-      bundle_token: ${{ secrets.BUNDLE_TOKEN }}
-```
-
-All reusable workflows above call `mise run <task>` in your repository. Ensure your `mise.toml` implements the required task contract.
-
-## Pin reusable workflows to a commit SHA
-
-Call these workflows at a full-length commit SHA, not `@main`. Branch names and tags can be moved to different code.
-
-Find SHAs on the [commits page](https://github.com/forsbergplustwo/github-actions/commits/main):
-
-```yaml
-jobs:
-  build:
-    uses: forsbergplustwo/github-actions/.github/workflows/ci.yml@<full-commit-sha>
+  ruby:
+    permissions:
+      contents: write
+    uses: forsbergplustwo/github-actions/.github/workflows/ci-ruby.yml@main
     with:
-      app_name: ddp
+      brakeman: false
     secrets:
-      master_key: ${{ secrets.MASTER_KEY }}
       bundle_token: ${{ secrets.BUNDLE_TOKEN }}
 ```
 
-Do not enable `pull_request_target` on caller workflows. These reusable workflows check out and run repository code with `bundle_token` / `master_key` / `shopify_cli_token`, and they refuse `pull_request_target` callers.
+### `ci-rails.yml` inputs
+
+| Input | Default | Notes |
+| --- | --- | --- |
+| `app_name` | required | Used for the default database name |
+| `database_name` | `<app_name>_test` | Override when the DB name differs |
+| `postgres_image` | `postgres:13-alpine` | |
+| `test` | `false` | Turn on for push with the expression above |
+| `rubocop` | `true` | |
+| `brakeman` | `true` | |
+| `lint_erb` | `false` | |
+| `autofix` | `true` | RuboCop may commit and push fixes on pull requests |
+
+### `ci-ruby.yml` inputs
+
+| Input | Default |
+| --- | --- |
+| `test` | `true` |
+| `rubocop` | `true` |
+| `brakeman` | `false` |
+| `lint_erb` | `false` |
+| `autofix` | `true` |
+
+### `ci-js.yml` inputs
+
+| Input | Default |
+| --- | --- |
+| `prettier` | `true` |
+| `test` | `false` |
+| `autofix` | `true` |
+
+Set a flag to `false` when that repo has no matching mise task. The job still appears as skipped.
+
+Do not enable `pull_request_target` on caller workflows. These reusable workflows check out and run repository code with secrets, and they refuse `pull_request_target` callers.
+
+## Deploy
+
+```yaml
+jobs:
+  deploy:
+    uses: forsbergplustwo/github-actions/.github/workflows/deploy.yml@main
+    secrets:
+      bundle_token: ${{ secrets.BUNDLE_TOKEN }}
+      shopify_cli_token: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN }}
+```
+
+The caller repo must define `mise` task `deploy:shopify`.

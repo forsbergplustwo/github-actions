@@ -1,0 +1,31 @@
+name: JS dependencies
+description: Install JS dependencies once (Install job) or restore them from actions/cache (check jobs).
+
+inputs:
+  mode:
+    description: install or restore
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Cache JS dependencies
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          **/node_modules
+          ~/.local/share/pnpm/store
+        key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: pnpm-${{ runner.os }}-
+    - name: Install JS dependencies
+      if: inputs.mode == 'install'
+      shell: bash
+      run: |
+        if mise tasks --json 2>/dev/null | grep -q '"name": "install:js"'; then
+          mise run install:js
+        elif [ -f pnpm-lock.yaml ]; then
+          pnpm install --frozen-lockfile
+        else
+          echo "No install:js task or pnpm-lock.yaml found"
+          exit 1
+        fi

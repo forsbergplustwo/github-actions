@@ -1,0 +1,86 @@
+name: CI JS
+
+on:
+  workflow_call:
+    inputs:
+      prettier:
+        required: false
+        type: boolean
+        default: true
+      test:
+        required: false
+        type: boolean
+        default: false
+      autofix:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      bundle_token:
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  MISE_EXPERIMENTAL: true
+  BUNDLE_GITHUB__COM: x-access-token:${{ secrets.bundle_token }}
+
+jobs:
+  install:
+    name: Install
+    if: ${{ inputs.prettier || inputs.test }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up mise
+        uses: $/.github/actions/setup-mise
+      - name: Install JS dependencies
+        uses: $/.github/actions/js-deps
+        with:
+          mode: install
+
+  prettier:
+    name: Prettier
+    if: ${{ inputs.prettier }}
+    needs: install
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Set up mise
+        uses: $/.github/actions/setup-mise
+        with:
+          fetch_depth: "0"
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.bundle_token }}
+      - name: Restore JS dependencies
+        uses: $/.github/actions/js-deps
+        with:
+          mode: restore
+      - name: Run formatter task
+        id: prettier
+        continue-on-error: ${{ inputs.autofix }}
+        run: mise run lint:js
+      - name: Commit autofixes
+        if: ${{ inputs.autofix }}
+        uses: $/.github/actions/commit-autofixes
+        with:
+          name: Prettier
+          step_outcome: ${{ steps.prettier.outcome }}
+
+  test:
+    name: Tests
+    if: ${{ inputs.test }}
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Set up mise
+        uses: $/.github/actions/setup-mise
+      - name: Restore JS dependencies
+        uses: $/.github/actions/js-deps
+        with:
+          mode: restore
+      - name: Run test task
+        timeout-minutes: 15
+        run: mise run test
